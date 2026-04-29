@@ -49,6 +49,12 @@ input,select,textarea{font-family:inherit;}
 #print-content .mise{border-top:1px solid #e8e4dc;padding-top:14px;margin-top:10px;}
 #print-content .mise-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#999;margin-bottom:5px;}
 #print-content .mise p{font-size:11.5px;color:#1a1a1a;line-height:1.6;}
+
+/* Tag pills: 2 rows on iPhone, scrollable on desktop */
+.abt-pills-row{display:flex;gap:5px;margin-bottom:6px;flex-wrap:nowrap;overflow-x:auto;}
+@media(max-width:600px){
+  .abt-pills-row{flex-wrap:wrap;overflow-x:visible;max-height:calc(2*(28px+5px));overflow-y:hidden;}
+}
 </style>
 </head>
 <body>
@@ -85,7 +91,7 @@ input,select,textarea{font-family:inherit;}
     </div>
     <!-- Tag-Filter gruppiert -->
     <div id="tag-filters" style="padding-bottom:12px;">
-      <div style="display:flex;gap:5px;overflow-x:auto;margin-bottom:6px;" id="abt-pills"></div>
+      <div id="abt-pills" class="abt-pills-row"></div>
       <div id="zub-pills-row" style="display:none;"></div>
       <div id="diat-pills-row" style="display:none;"></div>
     </div>
@@ -366,7 +372,7 @@ input,select,textarea{font-family:inherit;}
 <script>
 // ── CONFIG ──
 const TAGS={
-  abt: ["blooms","Amenity","Kochbuch","Pastry","Sonstiges","The Restaurant"],
+  abt: ["Amenity","blooms","Kochbuch","Pastry","Sonstiges","The Restaurant"],
   zub: ["Beilage","Brot","Eis & Sorbet","Fisch","Fleisch","Garnitur","Gemüse","Getränke","Grill","Pasta","Patisserie","Pizza","Salat","Sauce","Suppe & Brühen","Vorspeise"],
   diat:["Fettarm","Glutenfrei","Laktosefrei","Low-Carb","Nussfrei","Pescetarier","Proteinreich","Vegan","Vegetarisch","Zuckerarm"]
 };
