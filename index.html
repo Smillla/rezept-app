@@ -1918,50 +1918,11 @@ function doPrint(){
   var title=r?r.title:'Rezept';
   var content=document.getElementById('print-content').innerHTML;
   var css=document.querySelector('style').textContent;
-  var printCSS='@page{size:A4;margin:20mm 25mm 22mm 25mm;}body{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Helvetica,sans-serif;background:#fff;color:#000;max-width:640px;margin:0 auto;padding:24px;}';
-  var full='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+title+'</title><style>'+printCSS+css+'</style></head><body>'+content+'
-<!-- LOGIN OVERLAY -->
-<div id="login-overlay" style="display:none;position:fixed;inset:0;background:#fff;z-index:200;align-items:center;justify-content:center;">
-  <div style="width:100%;max-width:360px;padding:36px 28px;">
-    <svg width="44" height="44" viewBox="0 0 52 52" fill="none" style="margin-bottom:20px;"><circle cx="26" cy="26" r="24" stroke="#1a1a1a" stroke-width="1.5"/><text x="9" y="36" font-family="Georgia,'Times New Roman',serif" font-size="26" font-weight="400" fill="#1a1a1a">JT</text></svg>
-    <div style="font-size:22px;font-weight:600;margin-bottom:6px;">Anmelden</div>
-    <div style="font-size:13px;color:#999;margin-bottom:28px;">Rezepte geräteübergreifend synchronisieren</div>
-    <div style="margin-bottom:14px;"><span class="lbl">E-Mail</span><input id="login-email" type="email" placeholder="name@beispiel.ch" class="inp" style="font-size:14px;padding:10px 12px;"></div>
-    <div style="margin-bottom:20px;"><span class="lbl">Passwort</span><input id="login-pw" type="password" placeholder="Passwort" class="inp" style="font-size:14px;padding:10px 12px;" onkeydown="if(event.key==='Enter')doLogin()"></div>
-    <div id="login-error" style="color:#c44;font-size:13px;margin-bottom:12px;display:none;"></div>
-    <div onclick="doLogin()" style="background:#7A9C8E;border-radius:8px;padding:13px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;text-align:center;margin-bottom:10px;">Anmelden</div>
-    <div onclick="doRegister()" style="border:1px solid #e0e0e0;border-radius:8px;padding:13px;color:#666;font-size:14px;cursor:pointer;text-align:center;margin-bottom:16px;">Konto erstellen</div>
-    <div onclick="skipLogin()" style="text-align:center;font-size:12px;color:#bbb;cursor:pointer;">Ohne Konto fortfahren</div>
-  </div>
-</div>
-
-<!-- BACKUP OVERLAY -->
-<div id="backup-overlay" class="overlay" style="display:none;" onclick="if(event.target===this)closeBackup()">
-  <div class="overlay-sheet">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-      <div style="font-size:16px;font-weight:600;">Backup</div>
-      <div onclick="closeBackup()" style="color:#999;font-size:22px;cursor:pointer;line-height:1;">×</div>
-    </div>
-    <div style="margin-bottom:24px;">
-      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#999;margin-bottom:8px;">Daten sichern</div>
-      <p style="font-size:13px;color:#666;line-height:1.6;margin-bottom:12px;">Alle Rezepte, Zutaten-Stamm und Produktionsplan als Datei speichern.</p>
-      <div onclick="exportBackup()" style="background:#7A9C8E;border-radius:8px;padding:12px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;text-align:center;">Backup herunterladen</div>
-    </div>
-    <div style="height:1px;background:#e8e4dc;margin-bottom:24px;"></div>
-    <div>
-      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#999;margin-bottom:8px;">Daten wiederherstellen</div>
-      <p style="font-size:13px;color:#666;line-height:1.6;margin-bottom:12px;">Backup-Datei laden. <span style="color:#c44;font-weight:600;">Achtung: überschreibt alle aktuellen Daten.</span></p>
-      <label style="display:block;border:1.5px dashed #ddd;border-radius:8px;padding:14px;font-size:13px;color:#999;cursor:pointer;text-align:center;">Backup-Datei auswählen…<input type="file" accept=".json" onchange="importBackup(this)" style="display:none;"></label>
-      <div id="backup-status" style="margin-top:10px;font-size:13px;display:none;"></div>
-    </div>
-  </div>
-</div>
-</body></html>';
+  var printCSS='@page{size:A4;margin:20mm 25mm 22mm 25mm;}body{font-family:-apple-system,sans-serif;background:#fff;color:#000;max-width:640px;margin:0 auto;padding:24px;}';
+  var full='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+title+'</title><style>'+printCSS+css+'</style></head><body>'+content+'</body></html>';
   var w=window.open('','_blank','width=800,height=900');
-  if(!w){alert('Bitte Pop-ups erlauben und nochmals tippen.');return;}
-  w.document.write(full);
-  w.document.close();
-  w.focus();
+  if(!w){alert('Bitte Pop-ups erlauben.');return;}
+  w.document.write(full);w.document.close();w.focus();
   setTimeout(function(){w.print();},400);
 }
 function renderAbtPills(){
@@ -2877,12 +2838,8 @@ function setSyncStatus(s){
   else if(s==='syncing'){dot.style.background='#f0a500';lbl.textContent='Sync…';}
   else{dot.style.background='#ddd';lbl.textContent='Offline';}
 }
-function showSyncMenu(){
-  if(supaUser){if(confirm('Abmelden?
 
-'+supaUser.email))doLogout();}
-  else{var o=document.getElementById('login-overlay');o.style.display='flex';}
-}
+function showSyncMenu(){if(supaUser){if(confirm("Abmelden? "+supaUser.email))doLogout();}else{document.getElementById("login-overlay").style.display="flex";}}
 function skipLogin(){document.getElementById('login-overlay').style.display='none';}
 async function doLogin(){
   if(!supa)return;
@@ -2938,5 +2895,41 @@ if(supa)(async function(){
 })();
 renderAbtPills();renderList();
 </script>
+
+<!-- LOGIN OVERLAY -->
+<div id="login-overlay" style="display:none;position:fixed;inset:0;background:#fff;z-index:200;align-items:center;justify-content:center;">
+  <div style="width:100%;max-width:360px;padding:36px 28px;">
+    <svg width="44" height="44" viewBox="0 0 52 52" fill="none" style="margin-bottom:20px;"><circle cx="26" cy="26" r="24" stroke="#1a1a1a" stroke-width="1.5"/><text x="9" y="36" font-family="Georgia,'Times New Roman',serif" font-size="26" font-weight="400" fill="#1a1a1a">JT</text></svg>
+    <div style="font-size:22px;font-weight:600;margin-bottom:6px;">Anmelden</div>
+    <div style="font-size:13px;color:#999;margin-bottom:28px;">Rezepte geräteübergreifend synchronisieren</div>
+    <div style="margin-bottom:14px;"><span class="lbl">E-Mail</span><input id="login-email" type="email" placeholder="name@beispiel.ch" class="inp" style="font-size:14px;padding:10px 12px;"></div>
+    <div style="margin-bottom:20px;"><span class="lbl">Passwort</span><input id="login-pw" type="password" placeholder="Passwort" class="inp" style="font-size:14px;padding:10px 12px;" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div id="login-error" style="color:#c44;font-size:13px;margin-bottom:12px;display:none;"></div>
+    <div onclick="doLogin()" style="background:#7A9C8E;border-radius:8px;padding:13px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;text-align:center;margin-bottom:10px;">Anmelden</div>
+    <div onclick="doRegister()" style="border:1px solid #e0e0e0;border-radius:8px;padding:13px;color:#666;font-size:14px;cursor:pointer;text-align:center;margin-bottom:16px;">Konto erstellen</div>
+    <div onclick="skipLogin()" style="text-align:center;font-size:12px;color:#bbb;cursor:pointer;">Ohne Konto fortfahren</div>
+  </div>
+</div>
+<!-- BACKUP OVERLAY -->
+<div id="backup-overlay" class="overlay" style="display:none;" onclick="if(event.target===this)closeBackup()">
+  <div class="overlay-sheet">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <div style="font-size:16px;font-weight:600;">Backup</div>
+      <div onclick="closeBackup()" style="color:#999;font-size:22px;cursor:pointer;line-height:1;">×</div>
+    </div>
+    <div style="margin-bottom:24px;">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#999;margin-bottom:8px;">Daten sichern</div>
+      <p style="font-size:13px;color:#666;line-height:1.6;margin-bottom:12px;">Alle Rezepte, Zutaten-Stamm und Produktionsplan speichern.</p>
+      <div onclick="exportBackup()" style="background:#7A9C8E;border-radius:8px;padding:12px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;text-align:center;">Backup herunterladen</div>
+    </div>
+    <div style="height:1px;background:#e8e4dc;margin-bottom:24px;"></div>
+    <div>
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#999;margin-bottom:8px;">Daten wiederherstellen</div>
+      <p style="font-size:13px;color:#666;line-height:1.6;margin-bottom:12px;">Backup-Datei laden. <span style="color:#c44;font-weight:600;">Achtung: überschreibt alle Daten.</span></p>
+      <label style="display:block;border:1.5px dashed #ddd;border-radius:8px;padding:14px;font-size:13px;color:#999;cursor:pointer;text-align:center;">Backup-Datei auswählen…<input type="file" accept=".json" onchange="importBackup(this)" style="display:none;"></label>
+      <div id="backup-status" style="margin-top:10px;font-size:13px;display:none;"></div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
