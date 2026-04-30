@@ -1737,6 +1737,8 @@ let recipes=[{"id": "r_kb_025", "title": "Armer Ritter", "tags": ["Kochbuch", "F
    ],mise:"Bucheckern und Samen müssen 24h vorher getrennt eingeweicht werden.",notes:"",ts:Date.now()-1e5},
 ];
 
+// Load saved recipes from localStorage (persists edits/deletes/additions)
+(function(){var saved=localStorage.getItem("rzp_recipes");if(saved){try{var parsed=JSON.parse(saved);if(Array.isArray(parsed)&&parsed.length>0){recipes=parsed;}}catch(e){}}})();
 let currentId=null,editTags=[],editKomps=[],editingNew=false,currentAbt="Alle";
 let scaleBase=1;
 let kompScales={};  // {kompIndex: multiplier}
