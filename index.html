@@ -55,6 +55,22 @@ input,select,textarea{font-family:inherit;}
 @media(max-width:600px){
   .abt-pills-row{flex-wrap:wrap;overflow-x:visible;max-height:calc(2*(28px+5px));overflow-y:hidden;}
 }
+
+/* ── iPhone header & nav fixes ── */
+@media(max-width:430px){
+  #sync-label{display:none;}
+  #sync-btn{padding:6px 8px !important;min-width:22px;justify-content:center;}
+  .hdr-btns > div{padding:6px 9px !important;font-size:11px !important;}
+  .bnav{letter-spacing:0 !important;padding:10px 1px 12px !important;font-size:9px !important;}
+}
+
+/* iPhone fixes */
+@media(max-width:430px){
+  #sync-label{display:none;}
+  #sync-btn{padding:6px 8px !important;min-width:22px;justify-content:center;}
+  .hdr-btns > div{padding:6px 9px !important;font-size:11px !important;}
+  .bnav{letter-spacing:0 !important;padding:10px 1px 12px !important;font-size:9px !important;}
+}
 </style>
 </head>
 <body>
@@ -77,7 +93,7 @@ input,select,textarea{font-family:inherit;}
           </select>
         </div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;">
+      <div class="hdr-btns" style="display:flex;gap:6px;align-items:center;">
         <div id="sync-btn" onclick="showSyncMenu()" style="border:1px solid #E0E0E0;border-radius:8px;padding:6px 12px;font-size:12px;color:#999;cursor:pointer;background:#fff;display:flex;align-items:center;gap:5px;"><span id="sync-dot" style="width:7px;height:7px;border-radius:50%;background:#ddd;display:inline-block;"></span><span id="sync-label">Offline</span></div>
         <div onclick="showBackup()" style="border:1px solid #E0E0E0;border-radius:8px;padding:6px 12px;font-size:12px;color:#666;cursor:pointer;background:#fff;">Backup</div>
         <div onclick="showImport()" style="border:1px solid #E0E0E0;border-radius:8px;padding:6px 12px;font-size:12px;color:#666;cursor:pointer;background:#fff;">Import</div>
@@ -116,7 +132,7 @@ input,select,textarea{font-family:inherit;}
   <div id="detail-body" style="padding:28px 24px 100px;max-width:600px;margin:0 auto;background:#fdfcf8;"></div>
   <div class="scale-bar" id="scale-bar" style="display:none;">
     <div style="display:flex;align-items:center;gap:8px;">
-      <span style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:0.06em;">Gesamt skalieren</span>
+      <span style="font-size:11px;color:#999;text-transform:uppercase;">Gesamt skalieren</span>
       <input type="number" id="scale-inp" min="0.1" step="0.5"
         oninput="updateGlobalScale()"
         style="width:72px;border:1px solid #E0E0E0;border-radius:6px;padding:5px 7px;font-size:14px;font-family:'Courier New',monospace;background:#fff;color:#1a1a1a;text-align:center;">
@@ -246,10 +262,10 @@ input,select,textarea{font-family:inherit;}
 
 <!-- BOTTOM NAV -->
 <div id="bottom-nav" style="position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e8e4dc;display:flex;z-index:50;safe-area-inset-bottom:env(safe-area-inset-bottom);">
-  <div onclick="showTab('list')" id="bnav-list" class="bnav active" style="flex:1;padding:10px 0 12px;text-align:center;cursor:pointer;font-size:10px;color:#7A9C8E;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Rezepte</div>
-  <div onclick="showTab('stamm')" id="bnav-stamm" class="bnav" style="flex:1;padding:10px 0 12px;text-align:center;cursor:pointer;font-size:10px;color:#aaa;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Stamm</div>
-  <div onclick="showTab('produktion')" id="bnav-produktion" class="bnav" style="flex:1;padding:10px 0 12px;text-align:center;cursor:pointer;font-size:10px;color:#aaa;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Produktion</div>
-  <div onclick="showTab('bestellung')" id="bnav-bestellung" class="bnav" style="flex:1;padding:10px 0 12px;text-align:center;cursor:pointer;font-size:10px;color:#aaa;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Bestellung</div>
+  <div onclick="showTab('list')" id="bnav-list" class="bnav active" style="flex:1;padding:10px 0 12px;text-align:center;cursor:pointer;font-size:10px;color:#7A9C8E;font-weight:600;text-transform:uppercase;">Rezepte</div>
+  <div onclick="showTab('stamm')" id="bnav-stamm" class="bnav" style="flex:1;padding:10px 0 12px;text-align:center;cursor:pointer;font-size:10px;color:#aaa;font-weight:600;text-transform:uppercase;">Stamm</div>
+  <div onclick="showTab('produktion')" id="bnav-produktion" class="bnav" style="flex:1;padding:10px 0 12px;text-align:center;cursor:pointer;font-size:10px;color:#aaa;font-weight:600;text-transform:uppercase;">Produktion</div>
+  <div onclick="showTab('bestellung')" id="bnav-bestellung" class="bnav" style="flex:1;padding:10px 0 12px;text-align:center;cursor:pointer;font-size:10px;color:#aaa;font-weight:600;text-transform:uppercase;">Bestellung</div>
 </div>
 
 <!-- SCREEN: ZUTATEN-STAMM -->
@@ -1987,7 +2003,7 @@ function renderDetail(id){
   if(r.photo)h+='<div style="margin-bottom:16px;border-radius:10px;overflow:hidden;"><img src="'+r.photo+'" style="width:100%;max-height:200px;object-fit:cover;border-radius:10px;border:1px solid #e8e4dc;"></div>';
   h+='<h1 style="font-size:22px;font-weight:500;line-height:1.3;margin-bottom:'+(r.yield?'8px':'16px')+';color:#1a1a1a;">'+r.title+'</h1>';
   if(r.yield)h+='<div style="font-size:11.5px;color:#999;margin-bottom:16px;">'+r.yield+'</div>';
-  if(!hasMulti)h+='<div style="display:grid;grid-template-columns:auto 1fr;gap:3px 14px;margin-bottom:20px;align-items:baseline;"><span style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:#999;">Menge</span><span style="font-size:11.5px;color:#1a1a1a;" id="total-gm">'+(fmtG(totalRaw)||'—')+'</span></div>';
+  if(!hasMulti)h+='<div style="display:grid;grid-template-columns:auto 1fr;gap:3px 14px;margin-bottom:20px;align-items:baseline;"><span style="font-size:10px;font-weight:500;text-transform:uppercase;color:#999;">Menge</span><span style="font-size:11.5px;color:#1a1a1a;" id="total-gm">'+(fmtG(totalRaw)||'—')+'</span></div>';
   if(hasMulti){
     h+='<div style="margin-bottom:24px;">';
     r.components.forEach(function(c){
@@ -1998,7 +2014,7 @@ function renderDetail(id){
       h+='</div>';
     });
     h+='<div style="display:flex;justify-content:space-between;padding:6px 0;">';
-    h+='<span style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#999;">Total</span>';
+    h+='<span style="font-size:10px;text-transform:uppercase;color:#999;">Total</span>';
     h+='<span style="font-size:11px;color:#1a1a1a;font-weight:600;" id="total-gm">'+(fmtG(totalRaw)||'—')+'</span>';
     h+='</div></div>';
   }
