@@ -2,12 +2,12 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Rezepte</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-body{padding-bottom:56px;font-family:-apple-system,'Helvetica Neue',sans-serif;background:#fff;color:#1a1a1a;}
+html,body{overflow-x:hidden;max-width:100vw;}body{padding-bottom:56px;font-family:-apple-system,'Helvetica Neue',sans-serif;background:#fff;color:#1a1a1a;}
 input,select,textarea{font-family:inherit;}
 ::-webkit-scrollbar{display:none;}
 .screen{display:none;min-height:100vh;background:#fff;}
@@ -2184,6 +2184,16 @@ function saveRecipe(){
     notes:document.getElementById('e-notes').value.trim(),ts:Date.now()};
   const idx=recipes.findIndex(x=>x.id===currentId);
   if(idx>=0){recipes[idx]=r;}else{recipes.unshift(r);}
+  // Sync ingredient marke/lieferant → Stamm
+  r.components.forEach(function(comp){comp.groups.forEach(function(g){g.ings.forEach(function(i){
+    if(!i.n)return;
+    var se=stammByName(i.n);
+    if(!se){return;}
+    var changed=false;
+    if(i.p&&i.p.trim()&&se.marke!==i.p.trim()){se.marke=i.p.trim();changed=true;}
+    if(i.l&&i.l.trim()&&se.lieferanten.indexOf(i.l.trim())<0){se.lieferanten.push(i.l.trim());changed=true;}
+    if(changed)saveStammData();
+  });});});
   try{localStorage.setItem('rzp_recipes',JSON.stringify(recipes));}catch(e){}
   showDetail(currentId);
 }
@@ -2573,6 +2583,15 @@ function saveStamm(){
     zutatenStamm.push(obj);
   }
   saveStammData();
+  // Sync Stamm marke/lieferant → all matching recipe ingredients
+  var skey=obj.name.toLowerCase().trim();
+  var recipesChanged=false;
+  recipes.forEach(function(r){r.components.forEach(function(comp){comp.groups.forEach(function(g){g.ings.forEach(function(i){
+    if(!i.n||i.n.toLowerCase().trim()!==skey)return;
+    if(obj.marke&&i.p!==obj.marke){i.p=obj.marke;recipesChanged=true;}
+    if(obj.lieferanten.length&&!i.l){i.l=obj.lieferanten[0];recipesChanged=true;}
+  });});});});
+  if(recipesChanged){try{localStorage.setItem('rzp_recipes',JSON.stringify(recipes));}catch(e){}}
   showTab('stamm');
 }
 
