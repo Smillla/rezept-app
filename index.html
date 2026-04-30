@@ -1739,6 +1739,17 @@ let recipes=[{"id": "r_kb_025", "title": "Armer Ritter", "tags": ["Kochbuch", "F
 
 // Load saved recipes from localStorage (persists edits/deletes/additions)
 (function(){var saved=localStorage.getItem("rzp_recipes");if(saved){try{var parsed=JSON.parse(saved);if(Array.isArray(parsed)&&parsed.length>0){recipes=parsed;}}catch(e){}}})();
+// Migrate: auto-link existing ingredients to Stamm by name (runs once after both are loaded)
+function migrateIngStammIds(){
+  if(!zutatenStamm||!zutatenStamm.length)return;
+  var changed=false;
+  recipes.forEach(function(r){r.components.forEach(function(comp){comp.groups.forEach(function(g){g.ings.forEach(function(i){
+    if(i.stammId)return;
+    var m=stammByName(i.n);
+    if(m){i.stammId=m.id;changed=true;}
+  });});});});
+  if(changed)try{localStorage.setItem('rzp_recipes',JSON.stringify(recipes));}catch(e){}
+}
 let currentId=null,editTags=[],editKomps=[],editingNew=false,currentAbt="Alle";
 let scaleBase=1;
 let kompScales={};  // {kompIndex: multiplier}
@@ -2123,13 +2134,32 @@ function removeCT(t){editTags=editTags.filter(x=>x!==t);renderTagEditor();}
 function updIngEl(el){
   var ki=+el.dataset.ki,gi=+el.dataset.gi,ii=+el.dataset.ii,f=el.dataset.field;
   updIng(ki,gi,ii,f,el.value);
+  if(f==='n'){
+    var match=stammByName(el.value);
+    var ing=editKomps[ki].groups[gi].ings[ii];
+    if(match){
+      ing.stammId=match.id;
+      var di='[data-ki="'+ki+'"][data-gi="'+gi+'"][data-ii="'+ii+'"]';
+      var mp=document.querySelector(di+'[data-field="p"]');
+      var ml=document.querySelector(di+'[data-field="l"]');
+      if(mp&&!mp.value&&match.marke){mp.value=match.marke;ing.p=match.marke;}
+      if(ml&&!ml.value&&match.lieferanten&&match.lieferanten.length){ml.value=match.lieferanten[0];ing.l=match.lieferanten[0];}
+      el.style.borderColor='#7A9C8E';
+    } else {
+      ing.stammId=null;
+      el.style.borderColor='#E0E0E0';
+    }
+  }
 }
 function updOvenEl(el){
   updKompOven(+el.dataset.ki,el.dataset.field,el.value);
 }
 function renderEditKomps(){
   var hasMulti=editKomps.length>1;
-  var out='';
+  var out='<datalist id="ing-stamm-list">';
+  zutatenStamm.forEach(function(z){out+='<option value="'+z.name.replace(/"/g,'&quot;')+'">';});
+  out+='</datalist>';
+  out+='';
   editKomps.forEach(function(k,ki){
     // ── Oven block (per component) ──
     var hasOven=k.ovenTemp||k.ovenMode||k.ovenDur||k.ovenInfo;
@@ -2155,7 +2185,7 @@ function renderEditKomps(){
         ingsOut+='<div style="display:flex;gap:4px;margin-bottom:5px;align-items:center;">';
         ingsOut+='<input '+di+' data-field="a" value="'+i.a+'" oninput="updIngEl(this)" placeholder="Menge" style="width:50px;border:1px solid #E0E0E0;border-radius:6px;padding:6px 4px;font-size:13px;background:#fff;color:#1a1a1a;text-align:right;">';
         ingsOut+='<select '+di+' data-field="u" onchange="updIngEl(this)" style="width:52px;border:1px solid #E0E0E0;border-radius:6px;padding:6px 2px;font-size:12px;background:#fff;color:#1a1a1a;">'+sel+'</select>';
-        ingsOut+='<input '+di+' data-field="n" value="'+i.n+'" oninput="updIngEl(this)" placeholder="Produkt" style="flex:1;min-width:0;border:1px solid #E0E0E0;border-radius:6px;padding:6px 7px;font-size:13px;background:#fff;color:#1a1a1a;">';
+        ingsOut+='<input '+di+' data-field="n" value="'+getIngName(i)+'" oninput="updIngEl(this)" onchange="updIngEl(this)" list="ing-stamm-list" placeholder="Produkt" autocomplete="off" style="flex:1;min-width:0;border:1px solid '+(i.stammId?'#7A9C8E':'#E0E0E0')+';border-radius:6px;padding:6px 7px;font-size:13px;background:#fff;color:#1a1a1a;">';
         ingsOut+='<div style="width:90px;flex-shrink:0;display:flex;flex-direction:column;gap:3px;">';
         ingsOut+='<input '+di+' data-field="p" value="'+(i.p||'')+'" oninput="updIngEl(this)" placeholder="Marke" style="width:100%;border:1px solid #E0E0E0;border-radius:6px;padding:5px 7px;font-size:11px;background:#fff;color:#999;">';
         ingsOut+='<input '+di+' data-field="l" value="'+(i.l||'')+'" oninput="updIngEl(this)" placeholder="Lieferant" style="width:100%;border:1px solid #E8E4DC;border-radius:6px;padding:5px 7px;font-size:11px;background:#faf9f6;color:#bbb;">';
@@ -2197,7 +2227,7 @@ function saveRecipe(){
   const title=document.getElementById('e-title').value.trim();
   if(!title){alert("Titel eingeben.");return;}
   const r={id:currentId,title,tags:[...editTags],
-    components:editKomps.map(k=>({id:k.id,title:k.title,ovenTemp:k.ovenTemp,ovenMode:k.ovenMode,ovenDur:k.ovenDur,ovenInfo:k.ovenInfo,groups:k.groups.map(g=>({id:g.id,ings:g.ings.map(i=>({a:i.a,u:i.u,n:i.n,p:i.p,l:i.l||''})),ins:g.ins}))})),
+    components:editKomps.map(k=>({id:k.id,title:k.title,ovenTemp:k.ovenTemp,ovenMode:k.ovenMode,ovenDur:k.ovenDur,ovenInfo:k.ovenInfo,groups:k.groups.map(g=>({id:g.id,ings:g.ings.map(i=>({a:i.a,u:i.u,n:i.n,stammId:i.stammId||'',p:i.p,l:i.l||''})),ins:g.ins}))})),
     mise:document.getElementById('e-mise').value.trim(),
     notes:document.getElementById('e-notes').value.trim(),ts:Date.now()};
   const idx=recipes.findIndex(x=>x.id===currentId);
@@ -2371,6 +2401,7 @@ function printRecipe(){
 // ─── ZUTATEN-STAMM ───
 var zutatenStamm=JSON.parse(localStorage.getItem('rzp_stamm')||'[]');
 migrateStammDuplicates();
+migrateIngStammIds();
 function saveStammData(){try{localStorage.setItem('rzp_stamm',JSON.stringify(zutatenStamm));}catch(e){}}
 
 function syncStamm(){
@@ -2515,6 +2546,10 @@ function stammByName(name){
   var n=(name||'').toLowerCase().trim();
   return zutatenStamm.find(function(z){return z.name.toLowerCase().trim()===n;})||null;
 }
+function getIngName(ing){
+  if(ing.stammId){var s=zutatenStamm.find(function(z){return z.id===ing.stammId;});if(s)return s.name;}
+  return ing.n||'';
+}
 
 function renderStamm(){
   var q=(document.getElementById('stamm-search').value||'').toLowerCase();
@@ -2601,13 +2636,17 @@ function saveStamm(){
     zutatenStamm.push(obj);
   }
   saveStammData();
-  // Sync Stamm marke/lieferant → all matching recipe ingredients
+  // Propagate name, marke, lieferant to all linked recipe ingredients
   var skey=obj.name.toLowerCase().trim();
   var recipesChanged=false;
   recipes.forEach(function(r){r.components.forEach(function(comp){comp.groups.forEach(function(g){g.ings.forEach(function(i){
-    if(!i.n||i.n.toLowerCase().trim()!==skey)return;
+    var linked=i.stammId&&i.stammId===obj.id;
+    var byName=!i.stammId&&i.n&&i.n.toLowerCase().trim()===skey;
+    if(!linked&&!byName)return;
+    if(linked&&i.stammId){i.n=obj.name;recipesChanged=true;}
     if(obj.marke&&i.p!==obj.marke){i.p=obj.marke;recipesChanged=true;}
     if(obj.lieferanten.length&&!i.l){i.l=obj.lieferanten[0];recipesChanged=true;}
+    if(byName){i.stammId=obj.id;recipesChanged=true;}
   });});});});
   if(recipesChanged){try{localStorage.setItem('rzp_recipes',JSON.stringify(recipes));}catch(e){}}
   showTab('stamm');
