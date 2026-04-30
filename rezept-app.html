@@ -2055,7 +2055,11 @@ function renderGrpsHtml(groups,f){
       first=false;
       ings+='<div style="display:grid;grid-template-columns:72px 1fr;border-bottom:1px solid #e8e4dc;'+top+'">';
       ings+='<span style="font-size:11.5px;color:#555;text-align:right;padding:6px 12px 6px 0;border-right:1px solid #e8e4dc;">'+amt+'</span>';
-      ings+='<span style="font-size:11.5px;color:#1a1a1a;padding:6px 0 6px 14px;line-height:1.4;">'+i.n+detail+'</span>';
+      var infoLine=i.info?'<div style="font-size:10.5px;color:#aaa;font-style:italic;padding:0 0 4px 14px;">'+i.info+'</div>':'';
+      ings+='<div style="display:flex;flex-direction:column;justify-content:center;">';
+      ings+='<span style="font-size:11.5px;color:#1a1a1a;padding:'+(i.info?'4px':'6px')+' 0 '+(i.info?'2px':'6px')+' 14px;line-height:1.4;">'+getIngName(i)+detail+'</span>';
+      ings+=infoLine;
+      ings+='</div>';
       ings+='</div>';
     });
     var steps='';
@@ -2182,7 +2186,8 @@ function renderEditKomps(){
         var sel='';
         UNITS.forEach(function(u){sel+='<option'+(i.u===u?' selected':'')+'>'+u+'</option>';});
         var di='data-ki="'+ki+'" data-gi="'+gi+'" data-ii="'+ii+'"';
-        ingsOut+='<div style="display:flex;gap:4px;margin-bottom:5px;align-items:center;">';
+        ingsOut+='<div style="margin-bottom:5px;">';
+        ingsOut+='<div style="display:flex;gap:4px;align-items:center;">';
         ingsOut+='<input '+di+' data-field="a" value="'+i.a+'" oninput="updIngEl(this)" placeholder="Menge" style="width:50px;border:1px solid #E0E0E0;border-radius:6px;padding:6px 4px;font-size:13px;background:#fff;color:#1a1a1a;text-align:right;">';
         ingsOut+='<select '+di+' data-field="u" onchange="updIngEl(this)" style="width:52px;border:1px solid #E0E0E0;border-radius:6px;padding:6px 2px;font-size:12px;background:#fff;color:#1a1a1a;">'+sel+'</select>';
         ingsOut+='<input '+di+' data-field="n" value="'+getIngName(i)+'" oninput="updIngEl(this)" onchange="updIngEl(this)" list="ing-stamm-list" placeholder="Produkt" autocomplete="off" style="flex:1;min-width:0;border:1px solid '+(i.stammId?'#7A9C8E':'#E0E0E0')+';border-radius:6px;padding:6px 7px;font-size:13px;background:#fff;color:#1a1a1a;">';
@@ -2191,6 +2196,8 @@ function renderEditKomps(){
         ingsOut+='<input '+di+' data-field="l" value="'+(i.l||'')+'" oninput="updIngEl(this)" placeholder="Lieferant" style="width:100%;border:1px solid #E8E4DC;border-radius:6px;padding:5px 7px;font-size:11px;background:#faf9f6;color:#bbb;">';
         ingsOut+='</div>';
         ingsOut+='<span onclick="remIng('+ki+','+gi+','+ii+')" style="color:#ccc;font-size:20px;cursor:pointer;padding:0 3px;line-height:1;flex-shrink:0;">×</span>';
+        ingsOut+='</div>';
+        ingsOut+='<input '+di+' data-field="info" value="'+(i.info||'')+'" oninput="updIngEl(this)" placeholder="Hinweis: z.B. in 4mm Würfel, kalt verarbeiten…" style="width:100%;margin-top:3px;border:1px solid #E8E4DC;border-radius:6px;padding:4px 7px;font-size:11px;background:#fdfcfa;color:#888;font-style:italic;">';
         ingsOut+='</div>';
       });
       grpOut+='<div class="grp-block" style="margin-bottom:8px;position:relative;">';
@@ -2227,7 +2234,7 @@ function saveRecipe(){
   const title=document.getElementById('e-title').value.trim();
   if(!title){alert("Titel eingeben.");return;}
   const r={id:currentId,title,tags:[...editTags],
-    components:editKomps.map(k=>({id:k.id,title:k.title,ovenTemp:k.ovenTemp,ovenMode:k.ovenMode,ovenDur:k.ovenDur,ovenInfo:k.ovenInfo,groups:k.groups.map(g=>({id:g.id,ings:g.ings.map(i=>({a:i.a,u:i.u,n:i.n,stammId:i.stammId||'',p:i.p,l:i.l||''})),ins:g.ins}))})),
+    components:editKomps.map(k=>({id:k.id,title:k.title,ovenTemp:k.ovenTemp,ovenMode:k.ovenMode,ovenDur:k.ovenDur,ovenInfo:k.ovenInfo,groups:k.groups.map(g=>({id:g.id,ings:g.ings.map(i=>({a:i.a,u:i.u,n:i.n,stammId:i.stammId||'',p:i.p,l:i.l||'',info:i.info||''})),ins:g.ins}))})),
     mise:document.getElementById('e-mise').value.trim(),
     notes:document.getElementById('e-notes').value.trim(),ts:Date.now()};
   const idx=recipes.findIndex(x=>x.id===currentId);
