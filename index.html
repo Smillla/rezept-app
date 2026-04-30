@@ -121,9 +121,9 @@ input,select,textarea{font-family:inherit;}
     <div style="display:flex;justify-content:space-between;align-items:center;">
       <div onclick="showList()" style="display:flex;align-items:center;gap:3px;color:#7A9C8E;font-size:14px;font-weight:500;padding:13px 0;cursor:pointer;"><span style="font-size:20px;line-height:1;">‹</span> Rezepte</div>
       <div style="display:flex;gap:14px;align-items:center;">
-        <div onclick="printRecipe()" style="color:#999;font-size:13px;padding:13px 0;cursor:pointer;">Teilen</div>
+        <div onclick="printRecipe()" style="color:#999;font-size:14px;font-weight:500;padding:13px 0;cursor:pointer;">Teilen</div>
         <div style="display:flex;gap:14px;align-items:center;">
-        <div onclick="duplicateRecipe()" style="color:#aaa;font-size:13px;padding:13px 0;cursor:pointer;">Duplizieren</div>
+        <div onclick="duplicateRecipe()" style="color:#999;font-size:14px;font-weight:500;padding:13px 0;cursor:pointer;">Duplizieren</div>
         <div onclick="showEdit(currentId)" style="color:#7A9C8E;font-size:14px;font-weight:500;padding:13px 0;cursor:pointer;">Bearbeiten</div>
       </div>
       </div>
@@ -261,7 +261,7 @@ input,select,textarea{font-family:inherit;}
 
 
 <!-- BOTTOM NAV -->
-<div id="bottom-nav" style="position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e8e4dc;display:flex;z-index:50;safe-area-inset-bottom:env(safe-area-inset-bottom);">
+<div id="bottom-nav" style="position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e8e4dc;display:flex;z-index:50;padding-bottom:env(safe-area-inset-bottom);">
   <div onclick="showTab('list')" id="bnav-list" class="bnav active" style="flex:1;padding:10px 0 12px;text-align:center;cursor:pointer;font-size:10px;color:#7A9C8E;font-weight:600;text-transform:uppercase;">Rezepte</div>
   <div onclick="showTab('stamm')" id="bnav-stamm" class="bnav" style="flex:1;padding:10px 0 12px;text-align:center;cursor:pointer;font-size:10px;color:#aaa;font-weight:600;text-transform:uppercase;">Stamm</div>
   <div onclick="showTab('produktion')" id="bnav-produktion" class="bnav" style="flex:1;padding:10px 0 12px;text-align:center;cursor:pointer;font-size:10px;color:#aaa;font-weight:600;text-transform:uppercase;">Produktion</div>
