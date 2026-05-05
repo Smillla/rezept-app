@@ -124,13 +124,27 @@ input,select,textarea{font-family:inherit;}
   <div class="hdr">
     <div style="display:flex;justify-content:space-between;align-items:center;">
       <div onclick="showList()" style="display:flex;align-items:center;gap:3px;color:#7A9C8E;font-size:14px;font-weight:500;padding:13px 0;cursor:pointer;"><span style="font-size:20px;line-height:1;">‹</span> Rezepte</div>
-      <div style="display:flex;gap:14px;align-items:center;">
-        <div onclick="showVersions()" style="color:#999;font-size:14px;font-weight:500;padding:13px 0;cursor:pointer;">Versionen</div>
-        <div onclick="toggleKalkulation()" style="color:#999;font-size:14px;font-weight:500;padding:13px 0;cursor:pointer;">Kalkulation</div>
-        <div onclick="printRecipe()" style="color:#999;font-size:14px;font-weight:500;padding:13px 0;cursor:pointer;">Teilen</div>
-        <div style="display:flex;gap:14px;align-items:center;">
-        <div onclick="duplicateRecipe()" style="color:#999;font-size:14px;font-weight:500;padding:13px 0;cursor:pointer;">Duplizieren</div>
-        <div onclick="showEdit(currentId)" style="color:#7A9C8E;font-size:14px;font-weight:500;padding:13px 0;cursor:pointer;">Bearbeiten</div>
+      <div style="display:flex;gap:2px;align-items:center;">
+        <div onclick="showVersions()" style="display:flex;flex-direction:column;align-items:center;padding:8px 10px;cursor:pointer;color:#aaa;">
+          <span style="font-size:18px;line-height:1.2;">↺</span>
+          <span style="font-size:9px;margin-top:1px;">Versionen</span>
+        </div>
+        <div onclick="toggleKalkulation()" style="display:flex;flex-direction:column;align-items:center;padding:8px 10px;cursor:pointer;color:#aaa;">
+          <span style="font-size:18px;line-height:1.2;">₣</span>
+          <span style="font-size:9px;margin-top:1px;">Kosten</span>
+        </div>
+        <div onclick="printRecipe()" style="display:flex;flex-direction:column;align-items:center;padding:8px 10px;cursor:pointer;color:#aaa;">
+          <span style="font-size:18px;line-height:1.2;">↑</span>
+          <span style="font-size:9px;margin-top:1px;">Teilen</span>
+        </div>
+        <div onclick="duplicateRecipe()" style="display:flex;flex-direction:column;align-items:center;padding:8px 10px;cursor:pointer;color:#aaa;">
+          <span style="font-size:18px;line-height:1.2;">⊕</span>
+          <span style="font-size:9px;margin-top:1px;">Kopie</span>
+        </div>
+        <div onclick="showEdit(currentId)" style="display:flex;flex-direction:column;align-items:center;padding:8px 10px;cursor:pointer;color:#7A9C8E;">
+          <span style="font-size:18px;line-height:1.2;">✎</span>
+          <span style="font-size:9px;margin-top:1px;font-weight:600;">Edit</span>
+        </div>
       </div>
       </div>
     </div>
