@@ -121,6 +121,7 @@ input,select,textarea{font-family:inherit;}
     <div style="display:flex;justify-content:space-between;align-items:center;">
       <div onclick="showList()" style="display:flex;align-items:center;gap:3px;color:#7A9C8E;font-size:14px;font-weight:500;padding:13px 0;cursor:pointer;"><span style="font-size:20px;line-height:1;">‹</span> Rezepte</div>
       <div style="display:flex;gap:14px;align-items:center;">
+        <div onclick="toggleKalkulation()" style="color:#999;font-size:14px;font-weight:500;padding:13px 0;cursor:pointer;">Kalkulation</div>
         <div onclick="printRecipe()" style="color:#999;font-size:14px;font-weight:500;padding:13px 0;cursor:pointer;">Teilen</div>
         <div style="display:flex;gap:14px;align-items:center;">
         <div onclick="duplicateRecipe()" style="color:#999;font-size:14px;font-weight:500;padding:13px 0;cursor:pointer;">Duplizieren</div>
@@ -128,6 +129,10 @@ input,select,textarea{font-family:inherit;}
       </div>
       </div>
     </div>
+  </div>
+  <div id="kalk-panel" style="display:none;background:#f9f7f4;border-bottom:1px solid #e8e4dc;padding:16px 20px 12px;max-width:600px;margin:0 auto;">
+    <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#999;font-weight:600;margin-bottom:10px;">Kalkulation</div>
+    <div id="kalk-body"></div>
   </div>
   <div id="detail-body" style="padding:28px 24px 100px;max-width:600px;margin:0 auto;background:#fdfcf8;"></div>
   <div class="scale-bar" id="scale-bar" style="display:none;">
@@ -312,6 +317,16 @@ input,select,textarea{font-family:inherit;}
     <div style="margin-bottom:18px;">
       <span class="lbl">Notiz / Artikelnummer</span>
       <input id="se-notiz" placeholder="Intern — nicht im Rezept sichtbar" style="width:100%;border:1px solid #e0ddd8;border-radius:6px;padding:8px 10px;font-size:13px;color:#1a1a1a;background:#fff;">
+    </div>
+    <div style="margin-bottom:18px;">
+      <span class="lbl">Einkaufspreis (CHF)</span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input id="se-preis" type="number" step="0.01" min="0" placeholder="0.00" style="width:100px;border:1px solid #e0ddd8;border-radius:6px;padding:8px 10px;font-size:13px;color:#1a1a1a;background:#fff;">
+        <span style="font-size:13px;color:#999;">CHF pro</span>
+        <select id="se-preis-einheit" style="border:1px solid #e0ddd8;border-radius:6px;padding:8px 10px;font-size:13px;color:#1a1a1a;background:#fff;">
+          <option>kg</option><option>100g</option><option>L</option><option>dl</option><option>Stk</option><option>Bund</option><option>Beutel</option><option>Dose</option>
+        </select>
+      </div>
     </div>
   </div>
 </div>
@@ -2594,6 +2609,8 @@ function showStammEdit(id){
   document.getElementById('se-name').value=z?z.name:'';
   document.getElementById('se-marke').value=z?z.marke:'';
   document.getElementById('se-notiz').value=z?z.notiz:'';
+  document.getElementById('se-preis').value=z&&z.preis?z.preis:'';
+  document.getElementById('se-preis-einheit').value=z&&z.preisEinheit?z.preisEinheit:'kg';
   var delBtn=document.getElementById('stamm-del-btn');
   if(delBtn){
     delBtn.style.display=id?'block':'none';
@@ -2633,12 +2650,15 @@ function saveStamm(){
   document.querySelectorAll('#se-lieferanten [data-l]').forEach(function(el){
     if(el.style.color==='rgb(122, 156, 142)'||el.style.color==='#7A9C8E')lieferanten.push(el.dataset.l);
   });
+  var preisVal=parseFloat(document.getElementById('se-preis').value)||0;
   var obj={
     id:currentStammId||('z_'+Date.now()),
     name:name,
     marke:document.getElementById('se-marke').value.trim(),
     lieferanten:lieferanten,
     notiz:document.getElementById('se-notiz').value.trim(),
+    preis:preisVal||0,
+    preisEinheit:document.getElementById('se-preis-einheit').value,
   };
   if(currentStammId){
     var idx=zutatenStamm.findIndex(function(x){return x.id===currentStammId;});
@@ -2889,6 +2909,66 @@ function resetBestellung(){
   var el=document.getElementById('bestellung-list');
   if(el)el.dataset.items='[]';
   renderBestellung();
+}
+
+function toggleKalkulation(){
+  var panel=document.getElementById('kalk-panel');
+  if(!panel)return;
+  var visible=panel.style.display!=='none';
+  if(visible){panel.style.display='none';return;}
+  var r=recipes.find(function(x){return x.id===currentId;});
+  if(!r)return;
+  var scale=window._currentScale||1;
+  var rows=[];
+  var total=0;
+  var missing=[];
+  r.components.forEach(function(comp){
+    comp.groups.forEach(function(g){
+      g.ings.forEach(function(i){
+        if(!i.n)return;
+        var se=i.stammId?zutatenStamm.find(function(z){return z.id===i.stammId;}):stammByName(i.n);
+        if(!se||!se.preis){missing.push(i.n);return;}
+        // Convert recipe amount to stamm price unit
+        var amt=parseFloat(i.a)||0;
+        var recipeUnit=i.u||'g';
+        var priceUnit=se.preisEinheit||'kg';
+        var cost=0;
+        // Convert to grams/ml first, then to price unit
+        var inG=toG(amt,recipeUnit);
+        if(inG!==null){
+          var factor=priceUnit==='kg'?1/1000:priceUnit==='100g'?1/100:priceUnit==='L'?1/1000:priceUnit==='dl'?1/100:null;
+          if(factor!==null)cost=inG*scale*factor*se.preis;
+          else cost=0;
+        } else if(recipeUnit==='Stk'&&priceUnit==='Stk'){
+          cost=amt*scale*se.preis;
+        } else {
+          missing.push(i.n);return;
+        }
+        total+=cost;
+        rows.push({name:i.n,cost:cost});
+      });
+    });
+  });
+  var portionen=1;
+  var yieldStr=r.yield||'';
+  var pm=yieldStr.match(/(\d+[.,]?\d*)/);
+  if(pm)portionen=parseFloat(pm[1].replace(',','.'))||1;
+  var h='';
+  rows.forEach(function(row){
+    h+='<div style="display:flex;justify-content:space-between;font-size:12px;color:#555;padding:3px 0;border-bottom:1px solid #eee;">';
+    h+='<span>'+row.name+'</span><span style="color:#1a1a1a;">CHF '+row.cost.toFixed(2)+'</span></div>';
+  });
+  if(missing.length){
+    h+='<div style="font-size:11px;color:#bbb;margin-top:6px;">Kein Preis: '+missing.join(', ')+'</div>';
+  }
+  h+='<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;color:#1a1a1a;padding:8px 0 4px;border-top:2px solid #e8e4dc;margin-top:6px;">';
+  h+='<span>Total</span><span>CHF '+total.toFixed(2)+'</span></div>';
+  if(portionen>1){
+    h+='<div style="display:flex;justify-content:space-between;font-size:12px;color:#7A9C8E;padding:2px 0;">';
+    h+='<span>Pro Portion ('+portionen+')</span><span>CHF '+(total/portionen).toFixed(2)+'</span></div>';
+  }
+  document.getElementById('kalk-body').innerHTML=h;
+  panel.style.display='block';
 }
 
 function filterBestellung(lieferant){
