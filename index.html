@@ -368,6 +368,7 @@ input,select,textarea{font-family:inherit;}
     <div style="display:flex;justify-content:space-between;align-items:center;">
       <div style="font-size:16px;font-weight:600;">Bestellliste</div>
       <div style="display:flex;gap:6px;">
+        <div onclick="resetBestellung()" style="border:1px solid #e0ddd8;border-radius:8px;padding:6px 12px;font-size:12px;color:#c44;cursor:pointer;background:#fff;">Zurücksetzen</div>
         <div onclick="exportToReminders()" style="border:1px solid #e0ddd8;border-radius:8px;padding:6px 12px;font-size:12px;color:#7A9C8E;cursor:pointer;background:#fff;font-weight:500;">→ Erinnerungen</div>
         <div onclick="exportBestellung()" style="border:1px solid #e0ddd8;border-radius:8px;padding:6px 12px;font-size:12px;color:#666;cursor:pointer;background:#fff;">Exportieren</div>
       </div>
@@ -2880,6 +2881,14 @@ function exportToReminders(){
     return;
   }
   window.location.href='shortcuts://run-shortcut?name=Order%20Export&input='+encoded;
+}
+
+function resetBestellung(){
+  if(!confirm('Alle Häkchen entfernen?'))return;
+  bestellItems=[];
+  var el=document.getElementById('bestellung-list');
+  if(el)el.dataset.items='[]';
+  renderBestellung();
 }
 
 function filterBestellung(lieferant){
