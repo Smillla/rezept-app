@@ -367,7 +367,10 @@ input,select,textarea{font-family:inherit;}
   <div class="hdr">
     <div style="display:flex;justify-content:space-between;align-items:center;">
       <div style="font-size:16px;font-weight:600;">Bestellliste</div>
-      <div onclick="exportBestellung()" style="border:1px solid #e0ddd8;border-radius:8px;padding:6px 12px;font-size:12px;color:#666;cursor:pointer;background:#fff;">Exportieren</div>
+      <div style="display:flex;gap:6px;">
+        <div onclick="exportToReminders()" style="border:1px solid #e0ddd8;border-radius:8px;padding:6px 12px;font-size:12px;color:#7A9C8E;cursor:pointer;background:#fff;font-weight:500;">→ Erinnerungen</div>
+        <div onclick="exportBestellung()" style="border:1px solid #e0ddd8;border-radius:8px;padding:6px 12px;font-size:12px;color:#666;cursor:pointer;background:#fff;">Exportieren</div>
+      </div>
     </div>
     <div style="margin-top:10px;display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;">
       <div onclick="filterBestellung(null)" id="bf-all" class="pill on">Alle</div>
@@ -2856,6 +2859,34 @@ function toggleBestellDone(i){i=parseInt(i);
   });
   el.innerHTML=h;
   el.dataset.items=JSON.stringify(bestellItems);
+}
+
+function exportToReminders(){
+  var items=buildBestellung().filter(function(x){return !x.done;});
+  if(!items.length){alert('Keine offenen Bestellpositionen.');return;}
+  // Build one line per item: [Lieferant] Menge Einheit Produkt
+  var lines=items.map(function(x){
+    var lief=x.lieferant&&x.lieferant!=='—'?x.lieferant:'Kein Lieferant';
+    var amt=x.menge>0?(Math.round(x.menge*10)/10)+(x.einheit&&x.einheit!=='n.B.'?' '+x.einheit:''):'';
+    return '['+lief+'] '+(amt?amt+' ':'')+x.name;
+  });
+  var text=lines.join('\n');
+  var encoded=encodeURIComponent(text);
+  // Max URL length safety: if too long, warn and truncate
+  if(encoded.length>5000){
+    alert('Liste sehr lang ('+items.length+' Positionen). Nur erste '+Math.floor(items.length*5000/encoded.length)+' werden exportiert. Tipp: Filter nach Lieferant und exportiere einzeln.');
+    // Truncate to safe length
+    var truncLines=[];
+    var running='';
+    for(var i=0;i<lines.length;i++){
+      var next=running+(running?'%0A':'')+encodeURIComponent(lines[i]);
+      if(next.length>4800)break;
+      running=next;truncLines.push(lines[i]);
+    }
+    encoded=encodeURIComponent(truncLines.join('\n'));
+  }
+  var url='shortcuts://run-shortcut?name=Order%20Export&input='+encoded;
+  window.location.href=url;
 }
 
 function filterBestellung(lieferant){
