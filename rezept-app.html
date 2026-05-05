@@ -71,6 +71,10 @@ input,select,textarea{font-family:inherit;}
   .hdr-btns > div{padding:6px 9px !important;font-size:11px !important;}
   .bnav{letter-spacing:0 !important;padding:10px 1px 12px !important;font-size:9px !important;}
 }
+#ac-dropdown{position:fixed;background:#fff;border:1px solid #e0ddd8;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.10);z-index:999;max-height:180px;overflow-y:auto;display:none;min-width:160px;}
+#ac-dropdown div{padding:10px 14px;font-size:13px;color:#1a1a1a;border-bottom:1px solid #f5f3f0;cursor:pointer;}
+#ac-dropdown div:last-child{border-bottom:none;}
+#ac-dropdown div:active{background:#f0f5f3;}
 </style>
 </head>
 <body>
@@ -2213,10 +2217,10 @@ function renderEditKomps(){
         ingsOut+='<div style="display:flex;gap:4px;align-items:center;">';
         ingsOut+='<input '+di+' data-field="a" value="'+i.a+'" oninput="updIngEl(this)" placeholder="Menge" style="width:50px;border:1px solid #E0E0E0;border-radius:6px;padding:6px 4px;font-size:13px;background:#fff;color:#1a1a1a;text-align:right;">';
         ingsOut+='<select '+di+' data-field="u" onchange="updIngEl(this)" style="width:52px;border:1px solid #E0E0E0;border-radius:6px;padding:6px 2px;font-size:12px;background:#fff;color:#1a1a1a;">'+sel+'</select>';
-        ingsOut+='<input '+di+' data-field="n" value="'+getIngName(i)+'" oninput="updIngEl(this)" onchange="updIngEl(this)" list="ing-stamm-list" placeholder="Produkt" autocomplete="off" style="flex:1;min-width:0;border:1px solid '+(i.stammId?'#7A9C8E':'#E0E0E0')+';border-radius:6px;padding:6px 7px;font-size:13px;background:#fff;color:#1a1a1a;">';
+        ingsOut+='<input '+di+' data-field="n" value="'+getIngName(i)+'" oninput="updIngEl(this);acShow(this,\'n\')" onfocus="acShow(this,\'n\')" onblur="acHide(300)" placeholder="Produkt" autocomplete="off" style="flex:1;min-width:0;border:1px solid '+(i.stammId?'#7A9C8E':'#E0E0E0')+';border-radius:6px;padding:6px 7px;font-size:13px;background:#fff;color:#1a1a1a;">';
         ingsOut+='<div style="width:90px;flex-shrink:0;display:flex;flex-direction:column;gap:3px;">';
         ingsOut+='<input '+di+' data-field="p" value="'+(i.p||'')+'" oninput="updIngEl(this)" placeholder="Marke" style="width:100%;border:1px solid #E0E0E0;border-radius:6px;padding:5px 7px;font-size:11px;background:#fff;color:#999;">';
-        ingsOut+='<input '+di+' data-field="l" value="'+(i.l||'')+'" oninput="updIngEl(this)" placeholder="Lieferant" style="width:100%;border:1px solid #E8E4DC;border-radius:6px;padding:5px 7px;font-size:11px;background:#faf9f6;color:#bbb;">';
+        ingsOut+='<input '+di+' data-field="l" value="'+(i.l||'')+'" oninput="updIngEl(this);acShow(this,\'l\')" onfocus="acShow(this,\'l\')" onblur="acHide(300)" placeholder="Lieferant" autocomplete="off" style="width:100%;border:1px solid #E8E4DC;border-radius:6px;padding:5px 7px;font-size:11px;background:#faf9f6;color:#bbb;">';
         ingsOut+='</div>';
         ingsOut+='<span onclick="remIng('+ki+','+gi+','+ii+')" style="color:#ccc;font-size:20px;cursor:pointer;padding:0 3px;line-height:1;flex-shrink:0;">×</span>';
         ingsOut+='</div>';
@@ -2572,6 +2576,44 @@ function showTab(tab){
 }
 
 // ─── ZUTATEN-STAMM ───
+
+// ─── AUTOCOMPLETE ───
+var _acTarget=null;
+function acShow(el,type){
+  var q=(el.value||'').toLowerCase().trim();
+  var pool=type==='n'
+    ?zutatenStamm.map(function(z){return z.name;})
+    :LIEFERANTEN;
+  var matches=pool.filter(function(s){
+    return s.toLowerCase().includes(q);
+  }).slice(0,8);
+  var dd=document.getElementById('ac-dropdown');
+  if(!matches.length||(!q&&type==='stamm')){dd.style.display='none';return;}
+  var rect=el.getBoundingClientRect();
+  dd.style.display='block';
+  dd.style.left=rect.left+'px';
+  dd.style.top=(rect.bottom+2)+'px';
+  dd.style.width=Math.max(rect.width,160)+'px';
+  _acTarget=el;
+  dd.innerHTML=matches.map(function(s){
+    return '<div onmousedown="acPick(event,\''+s.replace(/'/g,"\'")+'\')">'+s+'</div>';
+  }).join('');
+}
+function acHide(delay){
+  setTimeout(function(){
+    var dd=document.getElementById('ac-dropdown');
+    if(dd)dd.style.display='none';
+  },delay||0);
+}
+function acPick(e,val){
+  e.preventDefault();
+  if(_acTarget){
+    _acTarget.value=val;
+    _acTarget.dispatchEvent(new Event('input',{bubbles:true}));
+    _acTarget.dispatchEvent(new Event('change',{bubbles:true}));
+  }
+  acHide(0);
+}
 function stammByName(name){
   var n=(name||'').toLowerCase().trim();
   return zutatenStamm.find(function(z){return z.name.toLowerCase().trim()===n;})||null;
@@ -3114,6 +3156,7 @@ if(supa)(async function(){
 renderAbtPills();renderList();
 </script>
 
+<div id="ac-dropdown"></div>
 <!-- LOGIN OVERLAY -->
 <div id="login-overlay" style="display:none;position:fixed;inset:0;background:#fff;z-index:200;align-items:center;justify-content:center;">
   <div style="width:100%;max-width:360px;padding:36px 28px;">
