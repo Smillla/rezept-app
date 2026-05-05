@@ -336,7 +336,10 @@ input,select,textarea{font-family:inherit;}
   <div class="hdr">
     <div style="display:flex;justify-content:space-between;align-items:center;">
       <div style="font-size:16px;font-weight:600;">Produktionsplan</div>
-      <div onclick="showProdAdd()" style="width:34px;height:34px;border-radius:17px;background:#7A9C8E;color:#fff;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;flex-shrink:0;">+</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <div onclick="resetProd()" style="border:1px solid #e0ddd8;border-radius:8px;padding:5px 10px;font-size:12px;color:#c44;cursor:pointer;background:#fff;">Leeren</div>
+        <div onclick="showProdAdd()" style="width:34px;height:34px;border-radius:17px;background:#7A9C8E;color:#fff;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;flex-shrink:0;">+</div>
+      </div>
     </div>
   </div>
   <div id="prod-list" style="overflow-y:auto;flex:1;padding-bottom:80px;"></div>
@@ -1995,7 +1998,7 @@ function renderList(){
   const q=(document.getElementById('search').value||"").toLowerCase();
   const filtered=recipes.filter(r=>{
     const tags=r.tags||[];
-    const mq=!q||r.title.toLowerCase().includes(q)||tags.some(t=>t.toLowerCase().includes(q))||r.components.some(c=>c.title.toLowerCase().includes(q)||c.groups.some(g=>g.ings.some(i=>i.n.toLowerCase().includes(q))));
+    const mq=!q||r.title.toLowerCase().includes(q)||tags.some(t=>t.toLowerCase().includes(q))||r.components.some(c=>c.title.toLowerCase().includes(q)||c.groups.some(g=>g.ings.some(i=>(i.n||'').toLowerCase().includes(q)||(i.info||'').toLowerCase().includes(q))));
     const ma=(!activeAbt||tags.includes(activeAbt))&&(!activeZub||tags.includes(activeZub))&&(!activeDiat||tags.includes(activeDiat));
     return mq&&ma;
   });
@@ -2179,10 +2182,11 @@ function updOvenEl(el){
 }
 function renderEditKomps(){
   var hasMulti=editKomps.length>1;
-  var out='<datalist id="ing-stamm-list">';
-  zutatenStamm.forEach(function(z){out+='<option value="'+z.name.replace(/"/g,'&quot;')+'">';});
-  out+='</datalist>';
-  out+='';
+  // Refresh datalist in DOM (not in innerHTML to avoid duplicates)
+  var dl=document.getElementById('ing-stamm-list');
+  if(!dl){dl=document.createElement('datalist');dl.id='ing-stamm-list';document.body.appendChild(dl);}
+  dl.innerHTML=zutatenStamm.map(function(z){return '<option value="'+z.name.replace(/"/g,'&quot;')+'">';}).join('');
+  var out='';
   editKomps.forEach(function(k,ki){
     // ── Oven block (per component) ──
     var hasOven=k.ovenTemp||k.ovenMode||k.ovenDur||k.ovenInfo;
@@ -2691,7 +2695,13 @@ function renderProd(){
     return;
   }
   var h='';
-  produktionsplan.forEach(function(p,i){
+  var sorted=produktionsplan.slice().sort(function(a,b){
+    if(!a.datum&&!b.datum)return 0;
+    if(!a.datum)return 1;if(!b.datum)return -1;
+    return a.datum.localeCompare(b.datum);
+  });
+  var sortedIdx=sorted.map(function(p){return produktionsplan.indexOf(p);});
+  sorted.forEach(function(p,si){var i=sortedIdx[si];
     h+='<div style="background:#fff;border-bottom:1px solid #f0ede8;padding:14px 20px;">';
     h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;">';
     h+='<div style="flex:1;">';
@@ -2758,6 +2768,10 @@ function saveProd(){
   showTab('produktion');
 }
 
+function resetProd(){
+  if(!confirm('Produktionsplan leeren?'))return;
+  produktionsplan=[];saveProdData();renderProd();
+}
 function delProd(i){
   produktionsplan.splice(i,1);
   saveProdData();renderProd();
@@ -2798,7 +2812,7 @@ function buildBestellung(){
               einheit:i.u||'',
               menge:scaledAmt,
               rezepte:[p.title],
-              done:false,
+              done:bestellDoneKeys[key]||false,
             };
           } else {
             merged[key].menge+=scaledAmt;
@@ -2853,10 +2867,12 @@ function renderBestellung(){
 }
 
 var bestellItems=[];
+var bestellDoneKeys=(function(){try{return JSON.parse(localStorage.getItem('rzp_bestell_done')||'{}');}catch(e){return {};}})();
+function saveBestellDone(){try{localStorage.setItem('rzp_bestell_done',JSON.stringify(bestellDoneKeys));}catch(e){}}
 function toggleBestellDone(i){i=parseInt(i);
   var el=document.getElementById('bestellung-list');
   try{bestellItems=JSON.parse(el.dataset.items||'[]');}catch(e){bestellItems=[];}
-  if(bestellItems[i])bestellItems[i].done=!bestellItems[i].done;
+  if(bestellItems[i]){bestellItems[i].done=!bestellItems[i].done;bestellDoneKeys[bestellItems[i].name]=bestellItems[i].done;saveBestellDone();}
   // Re-render with updated done state
   var h='';
   var lastLief='';
@@ -2905,7 +2921,7 @@ function exportToReminders(){
 
 function resetBestellung(){
   if(!confirm('Alle Häkchen entfernen?'))return;
-  bestellItems=[];
+  bestellItems=[];bestellDoneKeys={};saveBestellDone();
   var el=document.getElementById('bestellung-list');
   if(el)el.dataset.items='[]';
   renderBestellung();
@@ -2918,7 +2934,7 @@ function toggleKalkulation(){
   if(visible){panel.style.display='none';return;}
   var r=recipes.find(function(x){return x.id===currentId;});
   if(!r)return;
-  var scale=window._currentScale||1;
+  var scale=(parseFloat(document.getElementById('scale-inp')?document.getElementById('scale-inp').value:scaleBase)||scaleBase)/scaleBase||1;
   var rows=[];
   var total=0;
   var missing=[];
