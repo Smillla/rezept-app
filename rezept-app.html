@@ -125,6 +125,7 @@ input,select,textarea{font-family:inherit;}
     <div style="display:flex;justify-content:space-between;align-items:center;">
       <div onclick="showList()" style="display:flex;align-items:center;gap:3px;color:#7A9C8E;font-size:14px;font-weight:500;padding:13px 0;cursor:pointer;"><span style="font-size:20px;line-height:1;">‹</span> Rezepte</div>
       <div style="display:flex;gap:14px;align-items:center;">
+        <div onclick="showVersions()" style="color:#999;font-size:14px;font-weight:500;padding:13px 0;cursor:pointer;">Versionen</div>
         <div onclick="toggleKalkulation()" style="color:#999;font-size:14px;font-weight:500;padding:13px 0;cursor:pointer;">Kalkulation</div>
         <div onclick="printRecipe()" style="color:#999;font-size:14px;font-weight:500;padding:13px 0;cursor:pointer;">Teilen</div>
         <div style="display:flex;gap:14px;align-items:center;">
@@ -183,6 +184,13 @@ input,select,textarea{font-family:inherit;}
   <div style="padding:28px 24px 80px;max-width:600px;margin:0 auto;background:#fdfcf8;">
     <input id="e-title" placeholder="Titel"
       style="width:100%;border:none;border-bottom:1.5px solid #7A9C8E;background:none;font-size:20px;font-weight:500;color:#1a1a1a;padding:4px 0 10px;margin-bottom:24px;font-family:inherit;">
+    <!-- STATUS -->
+    <div style="margin-bottom:20px;display:flex;gap:8px;">
+      <div onclick="setEditStatus(null)" id="es-none" style="flex:1;text-align:center;border:1px solid #e0ddd8;border-radius:8px;padding:7px 4px;font-size:11px;color:#aaa;cursor:pointer;background:#fff;">Kein Status</div>
+      <div onclick="setEditStatus('entwicklung')" id="es-entwicklung" style="flex:1;text-align:center;border:1px solid #E8A838;border-radius:8px;padding:7px 4px;font-size:11px;color:#E8A838;cursor:pointer;background:#fff;">In Entwicklung</div>
+      <div onclick="setEditStatus('getestet')" id="es-getestet" style="flex:1;text-align:center;border:1px solid #5B8DD9;border-radius:8px;padding:7px 4px;font-size:11px;color:#5B8DD9;cursor:pointer;background:#fff;">Getestet</div>
+      <div onclick="setEditStatus('freigegeben')" id="es-freigegeben" style="flex:1;text-align:center;border:1px solid #7A9C8E;border-radius:8px;padding:7px 4px;font-size:11px;color:#7A9C8E;cursor:pointer;background:#fff;">Freigegeben</div>
+    </div>
     <!-- MENGE -->
     <div style="margin-bottom:20px;">
       <span class="lbl">Menge / Ertrag</span>
@@ -323,6 +331,12 @@ input,select,textarea{font-family:inherit;}
       <input id="se-notiz" placeholder="Intern — nicht im Rezept sichtbar" style="width:100%;border:1px solid #e0ddd8;border-radius:6px;padding:8px 10px;font-size:13px;color:#1a1a1a;background:#fff;">
     </div>
     <div style="margin-bottom:18px;">
+      <span class="lbl">Kategorie</span>
+      <select id="se-kategorie" style="width:100%;border:1px solid #e0ddd8;border-radius:6px;padding:8px 10px;font-size:13px;color:#1a1a1a;background:#fff;">
+        <option value="">— keine —</option>
+      </select>
+    </div>
+    <div style="margin-bottom:18px;">
       <span class="lbl">Einkaufspreis (CHF)</span>
       <div style="display:flex;gap:8px;align-items:center;">
         <input id="se-preis" type="number" step="0.01" min="0" placeholder="0.00" style="width:100px;border:1px solid #e0ddd8;border-radius:6px;padding:8px 10px;font-size:13px;color:#1a1a1a;background:#fff;">
@@ -341,6 +355,7 @@ input,select,textarea{font-family:inherit;}
     <div style="display:flex;justify-content:space-between;align-items:center;">
       <div style="font-size:16px;font-weight:600;">Produktionsplan</div>
       <div style="display:flex;gap:8px;align-items:center;">
+        <div onclick="showMiseEnPlace()" style="border:1px solid #e0ddd8;border-radius:8px;padding:5px 10px;font-size:12px;color:#7A9C8E;cursor:pointer;background:#fff;">Mise en Place</div>
         <div onclick="resetProd()" style="border:1px solid #e0ddd8;border-radius:8px;padding:5px 10px;font-size:12px;color:#c44;cursor:pointer;background:#fff;">Leeren</div>
         <div onclick="showProdAdd()" style="width:34px;height:34px;border-radius:17px;background:#7A9C8E;color:#fff;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;flex-shrink:0;">+</div>
       </div>
@@ -413,6 +428,7 @@ input,select,textarea{font-family:inherit;}
 
 <script>
 // ── CONFIG ──
+const STATUS={entwicklung:{label:'In Entwicklung',color:'#E8A838',bg:'#FEF3E2'},getestet:{label:'Getestet',color:'#5B8DD9',bg:'#EBF2FC'},freigegeben:{label:'Freigegeben',color:'#7A9C8E',bg:'#F0F5F3'}};
 const TAGS={
   abt: ["Amenity","blooms","Kochbuch","Pastry","Sonstiges","The Restaurant"],
   zub: ["Beilage","Brot","Eis & Sorbet","Fisch","Fleisch","Garnitur","Gemüse","Getränke","Grill","Pasta","Patisserie","Pizza","Salat","Sauce","Suppe & Brühen","Vorspeise"],
@@ -1778,7 +1794,9 @@ function migrateIngStammIds(){
 }
 let currentId=null,editTags=[],editKomps=[],editingNew=false,currentAbt="Alle";
 let scaleBase=1;
-let kompScales={};  // {kompIndex: multiplier}
+let kompScales={};
+var savedScales=(function(){try{return JSON.parse(localStorage.getItem('rzp_scales')||'{}');}catch(e){return {};}})();
+function saveScale(){try{localStorage.setItem('rzp_scales',JSON.stringify(savedScales));}catch(e){}}
 
 function uid(){return Math.random().toString(36).slice(2,9);}
 function newGrp(){return{id:uid(),ings:[{id:uid(),a:"",u:"g",n:"",p:""}],ins:""};}
@@ -1865,11 +1883,13 @@ function closePrint(){
 function showDetail(id){
   currentId=id;
   kompScales={};
+  // Restore saved scale if exists
+  var rs=currentId&&savedScales[currentId]?savedScales[currentId]:null;
   const r=recipes.find(x=>x.id===id);
   if(r){
     scaleBase=r.components.reduce((s,c)=>{const g=kompGMraw(c);return s+(g||0);},0)||1;
     const savedScale=recipes.find(x=>x.id===id)?.savedScale;
-  document.getElementById('scale-inp').value=savedScale||Math.round(scaleBase);
+  document.getElementById('scale-inp').value=rs||savedScale||Math.round(scaleBase);
     document.getElementById('scale-factor').textContent='';
     document.getElementById('scale-bar').style.display='block';
   }
@@ -1881,7 +1901,7 @@ function showDetail(id){
   }
 }
 function showNew(){
-  editingNew=true;currentId=uid();editTags=[];
+  editingNew=true;currentId=uid();editTags=[];editStatus=null;setEditStatus(null);
   editKomps=[newKomp()];
   ['e-title','e-mise','e-notes','e-yield'].forEach(x=>document.getElementById(x).value="");
   const pv=document.getElementById('photo-preview');if(pv)pv.style.display='none';
@@ -1907,7 +1927,19 @@ function showEdit(id){
     document.getElementById('del-h1').style.display='block';
     document.getElementById('del-h2').style.display='none';
   }
+  editStatus=r.status||null;setEditStatus(editStatus);
   renderTagEditor();renderEditKomps();show('edit');
+}
+var editStatus=null;
+function setEditStatus(s){
+  editStatus=s;
+  ['none','entwicklung','getestet','freigegeben'].forEach(function(k){
+    var el=document.getElementById('es-'+k);if(!el)return;
+    var active=(s===null&&k==='none')||(s===k);
+    var st=s&&k===s?STATUS[k]:null;
+    el.style.background=active?(st?st.bg:'#f0f0f0'):'#fff';
+    el.style.fontWeight=active?'600':'400';
+  });
 }
 function cancelEdit(){editingNew?showList():showDetail(currentId);}
 
@@ -1915,6 +1947,7 @@ function cancelEdit(){editingNew?showList():showDetail(currentId);}
 function updateGlobalScale(){
   const t=parseFloat(document.getElementById('scale-inp').value)||scaleBase;
   const f=t/scaleBase;
+  if(currentId){savedScales[currentId]=t;saveScale();}
   const sr=recipes.find(x=>x.id===currentId);if(sr)sr.savedScale=t;
   try{localStorage.setItem('rzp_recipes',JSON.stringify(recipes));}catch(e){}
   const fEl=document.getElementById('scale-factor');
@@ -2025,7 +2058,8 @@ function renderList(){
       tp+='<span style="display:inline-block;background:#F0F5F3;border-radius:20px;padding:2px 8px;font-size:10px;color:#7A9C8E;border:1px solid #D4E3DE;">'+t+'</span>';
     });
     listHtml+='<div onclick="showDetail(this.dataset.id)" data-id="'+r.id+'" style="background:#fff;border-bottom:1px solid #EBEBEB;padding:15px 20px;cursor:pointer;">';
-    listHtml+='<div style="font-size:15px;font-weight:500;color:#1a1a1a;margin-bottom:4px;line-height:1.3;">'+r.title+'</div>';
+    var sBadge=r.status&&STATUS[r.status]?'<span style="display:inline-block;margin-left:8px;background:'+STATUS[r.status].bg+';border-radius:20px;padding:1px 7px;font-size:10px;color:'+STATUS[r.status].color+';font-weight:600;">'+STATUS[r.status].label+'</span>':'';
+    listHtml+='<div style="font-size:15px;font-weight:500;color:#1a1a1a;margin-bottom:4px;line-height:1.3;">'+r.title+sBadge+'</div>';
     if(kompCount)listHtml+='<div style="font-size:12px;color:#bbb;margin-bottom:5px;">'+kompCount+' Komponente'+(kompCount===1?'':'n')+'</div>';
     if(tp)listHtml+='<div style="display:flex;flex-wrap:wrap;gap:4px;">'+tp+'</div>';
     listHtml+='</div>';
@@ -2040,7 +2074,8 @@ function renderDetail(id){
   var totalRaw=r.components.reduce(function(s,c){var g=kompGMraw(c);return s+(g||0);},0);
   var h='';
   if(r.photo)h+='<div style="margin-bottom:16px;border-radius:10px;overflow:hidden;"><img src="'+r.photo+'" style="width:100%;max-height:200px;object-fit:cover;border-radius:10px;border:1px solid #e8e4dc;"></div>';
-  h+='<h1 style="font-size:22px;font-weight:500;line-height:1.3;margin-bottom:'+(r.yield?'8px':'16px')+';color:#1a1a1a;">'+r.title+'</h1>';
+  var detailBadge=r.status&&STATUS[r.status]?'<div style="display:inline-block;background:'+STATUS[r.status].bg+';border-radius:20px;padding:3px 10px;font-size:11px;color:'+STATUS[r.status].color+';font-weight:600;margin-bottom:10px;">'+STATUS[r.status].label+'</div><br>':'';
+  h+=detailBadge+'<h1 style="font-size:22px;font-weight:500;line-height:1.3;margin-bottom:'+(r.yield?'8px':'16px')+';color:#1a1a1a;">'+r.title+'</h1>';
   if(r.yield)h+='<div style="font-size:11.5px;color:#999;margin-bottom:16px;">'+r.yield+'</div>';
   if(!hasMulti)h+='<div style="display:grid;grid-template-columns:auto 1fr;gap:3px 14px;margin-bottom:20px;align-items:baseline;"><span style="font-size:10px;font-weight:500;text-transform:uppercase;color:#999;">Menge</span><span style="font-size:11.5px;color:#1a1a1a;" id="total-gm">'+(fmtG(totalRaw)||'—')+'</span></div>';
   if(hasMulti){
@@ -2260,12 +2295,20 @@ function updGrp(ki,gi,v){editKomps[ki].groups[gi].ins=v;}
 function saveRecipe(){
   const title=document.getElementById('e-title').value.trim();
   if(!title){alert("Titel eingeben.");return;}
-  const r={id:currentId,title,tags:[...editTags],
+  const r={id:currentId,title,status:editStatus||null,tags:[...editTags],
     components:editKomps.map(k=>({id:k.id,title:k.title,ovenTemp:k.ovenTemp,ovenMode:k.ovenMode,ovenDur:k.ovenDur,ovenInfo:k.ovenInfo,groups:k.groups.map(g=>({id:g.id,ings:g.ings.map(i=>({a:i.a,u:i.u,n:i.n,stammId:i.stammId||'',p:i.p,l:i.l||'',info:i.info||''})),ins:g.ins}))})),
     mise:document.getElementById('e-mise').value.trim(),
     notes:document.getElementById('e-notes').value.trim(),ts:Date.now()};
   const idx=recipes.findIndex(x=>x.id===currentId);
-  if(idx>=0){recipes[idx]=r;}else{recipes.unshift(r);}
+  // Save version before overwriting
+  if(idx>=0){
+    var versions=JSON.parse(localStorage.getItem('rzp_versions')||'{}');
+    if(!versions[currentId])versions[currentId]=[];
+    versions[currentId].unshift({ts:Date.now(),recipe:JSON.parse(JSON.stringify(recipes[idx]))});
+    if(versions[currentId].length>10)versions[currentId]=versions[currentId].slice(0,10);
+    try{localStorage.setItem('rzp_versions',JSON.stringify(versions));}catch(e){}
+    recipes[idx]=r;
+  }else{recipes.unshift(r);}
   // Sync ingredient marke/lieferant → Stamm
   r.components.forEach(function(comp){comp.groups.forEach(function(g){g.ings.forEach(function(i){
     if(!i.n)return;
@@ -2549,6 +2592,7 @@ var produktionsplan=JSON.parse(localStorage.getItem('rzp_produktion')||'[]');
 function saveProdData(){try{localStorage.setItem('rzp_produktion',JSON.stringify(produktionsplan));}catch(e){}}
 
 var LIEFERANTEN=['Marinello','Transgourmet','Bos Food','Sense of Delight','Pistor','Hugo Dubno','Pati Swiss','Eigenproduktion','Garten'];
+var KATEGORIEN=['Früchte & Gemüse','Milch & Ei','Fleisch & Fisch','Mehl & Backwaren','Gewürze & Öle','Tiefkühl','Getränke','Sonstiges'];
 
 var currentStammId=null;
 var currentProdRezeptId=null;
@@ -2657,6 +2701,8 @@ function showStammEdit(id){
   document.getElementById('se-notiz').value=z?z.notiz:'';
   document.getElementById('se-preis').value=z&&z.preis?z.preis:'';
   document.getElementById('se-preis-einheit').value=z&&z.preisEinheit?z.preisEinheit:'kg';
+  var katSel=document.getElementById('se-kategorie');
+  katSel.innerHTML='<option value="">— keine —</option>'+KATEGORIEN.map(function(k){return '<option value="'+k+'"'+(z&&z.kategorie===k?' selected':'')+'>'+k+'</option>';}).join('');
   var delBtn=document.getElementById('stamm-del-btn');
   if(delBtn){
     delBtn.style.display=id?'block':'none';
@@ -2705,6 +2751,7 @@ function saveStamm(){
     notiz:document.getElementById('se-notiz').value.trim(),
     preis:preisVal||0,
     preisEinheit:document.getElementById('se-preis-einheit').value,
+    kategorie:document.getElementById('se-kategorie').value||'',
   };
   if(currentStammId){
     var idx=zutatenStamm.findIndex(function(x){return x.id===currentStammId;});
@@ -2743,7 +2790,14 @@ function renderProd(){
     return a.datum.localeCompare(b.datum);
   });
   var sortedIdx=sorted.map(function(p){return produktionsplan.indexOf(p);});
+  var lastDatum='';
   sorted.forEach(function(p,si){var i=sortedIdx[si];
+    var thisDatum=p.datum||'';
+    if(thisDatum!==lastDatum){
+      lastDatum=thisDatum;
+      var dateLabel=thisDatum?new Date(thisDatum+'T12:00:00').toLocaleDateString('de-CH',{weekday:'long',day:'numeric',month:'long'}):'Kein Datum';
+      h+='<div style="font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#7A9C8E;padding:10px 20px 5px;border-bottom:1px solid #e8e4dc;background:#fdfcf8;">'+dateLabel+'</div>';
+    }
     h+='<div style="background:#fff;border-bottom:1px solid #f0ede8;padding:14px 20px;">';
     h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;">';
     h+='<div style="flex:1;">';
@@ -2808,6 +2862,94 @@ function saveProd(){
   });
   saveProdData();
   showTab('produktion');
+}
+
+function showVersions(){
+  var el=document.getElementById('versions-overlay');
+  var body=document.getElementById('versions-body');
+  if(!el||!body)return;
+  var versions=JSON.parse(localStorage.getItem('rzp_versions')||'{}');
+  var list=versions[currentId]||[];
+  if(!list.length){body.innerHTML='<div style="padding:40px;text-align:center;color:#ccc;font-size:13px;">Noch keine gespeicherten Versionen.<br><span style="font-size:11px;">Wird beim nächsten Speichern erstellt.</span></div>';el.style.display='flex';return;}
+  var h='<div style="font-size:12px;color:#999;margin-bottom:16px;">Die letzten 10 Versionen vor dem Speichern.</div>';
+  list.forEach(function(v,i){
+    var d=new Date(v.ts).toLocaleString('de-CH',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    h+='<div style="border:1px solid #e8e4dc;border-radius:8px;padding:12px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">';
+    h+='<div><div style="font-size:13px;font-weight:500;color:#1a1a1a;">'+v.recipe.title+'</div><div style="font-size:11px;color:#aaa;margin-top:2px;">'+d+'</div></div>';
+    h+='<div onclick="restoreVersion('+i+')" style="border:1px solid #7A9C8E;border-radius:6px;padding:5px 12px;font-size:12px;color:#7A9C8E;cursor:pointer;">Wiederherstellen</div>';
+    h+='</div>';
+  });
+  body.innerHTML=h;
+  el.style.display='flex';
+}
+function restoreVersion(i){
+  if(!confirm('Diese Version wiederherstellen? Die aktuelle Version wird als neue Version gespeichert.'))return;
+  var versions=JSON.parse(localStorage.getItem('rzp_versions')||'{}');
+  var list=versions[currentId]||[];
+  if(!list[i])return;
+  var old=recipes.find(function(x){return x.id===currentId;});
+  if(old){
+    if(!versions[currentId])versions[currentId]=[];
+    versions[currentId].unshift({ts:Date.now(),recipe:JSON.parse(JSON.stringify(old))});
+    if(versions[currentId].length>10)versions[currentId]=versions[currentId].slice(0,10);
+    try{localStorage.setItem('rzp_versions',JSON.stringify(versions));}catch(e){}
+  }
+  var restored=JSON.parse(JSON.stringify(list[i].recipe));
+  restored.ts=Date.now();
+  var idx=recipes.findIndex(function(x){return x.id===currentId;});
+  if(idx>=0)recipes[idx]=restored;
+  try{localStorage.setItem('rzp_recipes',JSON.stringify(recipes));}catch(e){}
+  document.getElementById('versions-overlay').style.display='none';
+  showDetail(currentId);
+}
+
+function showMiseEnPlace(){
+  var el=document.getElementById('mise-overlay');
+  var body=document.getElementById('mise-body');
+  if(!el||!body)return;
+  if(!produktionsplan.length){body.innerHTML='<div style="padding:40px;text-align:center;color:#ccc;">Produktionsplan ist leer</div>';el.style.display='flex';return;}
+  var sorted=produktionsplan.slice().sort(function(a,b){
+    if(!a.datum&&!b.datum)return 0;
+    if(!a.datum)return 1;if(!b.datum)return -1;
+    return a.datum.localeCompare(b.datum);
+  });
+  var h='';
+  var lastDatum='';
+  sorted.forEach(function(p){
+    var r=recipes.find(function(x){return x.id===p.rezeptId;});
+    if(!r)return;
+    var baseGM=r.components.reduce(function(s,comp){return s+comp.groups.reduce(function(s2,g){return s2+g.ings.reduce(function(s3,i){return s3+(toG(i.a,i.u)||0);},0);},0);},0);
+    var scale=baseGM>0?p.zielMenge/baseGM:1;
+    if(p.einheit==='kg'&&baseGM>0)scale=(p.zielMenge*1000)/baseGM;
+    if(p.einheit==='Rezept')scale=p.zielMenge;
+    var thisDatum=p.datum||'';
+    if(thisDatum!==lastDatum){
+      lastDatum=thisDatum;
+      var dl=thisDatum?new Date(thisDatum+'T12:00:00').toLocaleDateString('de-CH',{weekday:'long',day:'numeric',month:'long'}):'Kein Datum';
+      h+='<div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#7A9C8E;padding:14px 0 6px;border-bottom:2px solid #e8e4dc;margin-bottom:10px;">'+dl+'</div>';
+    }
+    h+='<div style="margin-bottom:16px;">';
+    h+='<div style="font-size:14px;font-weight:600;color:#1a1a1a;margin-bottom:2px;">'+r.title+'</div>';
+    h+='<div style="font-size:11px;color:#7A9C8E;margin-bottom:8px;">'+p.zielMenge+' '+p.einheit+(p.notiz?' · '+p.notiz:'')+'</div>';
+    r.components.forEach(function(comp){
+      if(comp.title)h+='<div style="font-size:11px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:0.06em;margin:6px 0 3px;">'+comp.title+'</div>';
+      comp.groups.forEach(function(g){
+        g.ings.forEach(function(i){
+          if(!i.n)return;
+          var a=fa(i.a,i.u,scale,i.n);
+          var amt=a?a+' '+(i.u!=='n.B.'?i.u:''):'';
+          h+='<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #f5f3f0;align-items:baseline;">';
+          h+='<span style="font-size:11px;color:#999;min-width:70px;text-align:right;">'+amt+'</span>';
+          h+='<span style="font-size:13px;color:#1a1a1a;">'+getIngName(i)+(i.info?'<span style="font-size:11px;color:#bbb;font-style:italic;"> · '+i.info+'</span>':'')+'</span>';
+          h+='</div>';
+        });
+        if(g.ins)h+='<div style="font-size:11px;color:#888;padding:5px 0 3px 78px;font-style:italic;line-height:1.5;">→ '+g.ins+'</div>';
+      });
+    });
+    h+='</div>';
+  });
+  body.innerHTML=h;
+  el.style.display='flex';
 }
 
 function resetProd(){
@@ -2880,13 +3022,39 @@ function renderBestellung(){
   }
   var filtered=bestellungFilter?items.filter(function(x){return x.lieferant===bestellungFilter||x.lieferanten.indexOf(bestellungFilter)>=0;}):items;
 
+  // Pre-calculate costs per supplier
+  var liefCosts={};
+  filtered.forEach(function(item){
+    var se=item.stammId?zutatenStamm.find(function(z){return z.id===item.stammId;}):stammByName(item.name);
+    if(!se||!se.preis||item.menge<=0)return;
+    var inG=item.menge;// menge is already in recipe unit
+    var priceUnit=se.preisEinheit||'kg';
+    var factor=priceUnit==='kg'?1/1000:priceUnit==='100g'?1/100:priceUnit==='L'?1/1000:priceUnit==='dl'?1/100:null;
+    if(factor===null&&item.einheit==='Stk'&&priceUnit==='Stk')factor=1;
+    if(factor===null)return;
+    var cost=inG*factor*se.preis;
+    var lk=item.lieferant||'—';
+    liefCosts[lk]=(liefCosts[lk]||0)+cost;
+  });
   var h='';
   var lastLief='';
+  var lastKat='';
   filtered.forEach(function(item,i){
     var lief=item.lieferant||'—';
     if(!bestellungFilter&&lief!==lastLief){
+      // Close previous group total
+      if(lastLief&&liefCosts[lastLief]){
+        h+='<div style="padding:6px 20px;background:#fdfcf8;border-bottom:1px solid #e8e4dc;text-align:right;font-size:11px;color:#999;">Total: <span style="color:#1a1a1a;font-weight:600;">CHF '+liefCosts[lastLief].toFixed(2)+'</span></div>';
+      }
       h+='<div style="font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#7A9C8E;padding:10px 20px 5px;border-bottom:1px solid #e8e4dc;background:#fdfcf8;">'+lief+'</div>';
-      lastLief=lief;
+      lastLief=lief;lastKat='';
+    }
+    // Kategorie sub-header
+    var se2=item.stammId?zutatenStamm.find(function(z){return z.id===item.stammId;}):stammByName(item.name);
+    var kat=se2&&se2.kategorie?se2.kategorie:'';
+    if(kat&&kat!==lastKat){
+      lastKat=kat;
+      h+='<div style="font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:#bbb;padding:6px 20px 3px;background:#fafaf8;">'+kat+'</div>';
     }
     var amtDisplay=item.menge>0?Math.round(item.menge*10)/10:'—';
     h+='<div onclick="toggleBestellDone(this.dataset.i)" data-i="'+i+'" style="display:grid;grid-template-columns:64px 1fr 80px 36px;border-bottom:1px solid #f0ede8;align-items:center;background:#fff;'+(item.done?'opacity:0.4;':'')+'">';
@@ -2901,6 +3069,10 @@ function renderBestellung(){
     h+='</div>';
   });
 
+  // Final group total
+  if(!bestellungFilter&&lastLief&&liefCosts[lastLief]){
+    h+='<div style="padding:6px 20px;background:#fdfcf8;border-bottom:1px solid #e8e4dc;text-align:right;font-size:11px;color:#999;">Total: <span style="color:#1a1a1a;font-weight:600;">CHF '+liefCosts[lastLief].toFixed(2)+'</span></div>';
+  }
   if(!filtered.length)h='<div style="padding:32px;text-align:center;color:#ccc;font-size:13px;">Kein Eintrag für diesen Lieferanten</div>';
   el.innerHTML=h;
 
@@ -3156,6 +3328,24 @@ if(supa)(async function(){
 renderAbtPills();renderList();
 </script>
 
+<div id="versions-overlay" style="display:none;position:fixed;inset:0;background:#fff;z-index:100;flex-direction:column;">
+  <div class="hdr" style="flex-shrink:0;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-size:16px;font-weight:600;">Versionen</div>
+      <div onclick="document.getElementById('versions-overlay').style.display='none'" style="color:#999;font-size:14px;cursor:pointer;padding:10px 0;">Schliessen</div>
+    </div>
+  </div>
+  <div id="versions-body" style="overflow-y:auto;flex:1;padding:16px 20px 80px;"></div>
+</div>
+<div id="mise-overlay" style="display:none;position:fixed;inset:0;background:#fff;z-index:100;flex-direction:column;">
+  <div class="hdr" style="flex-shrink:0;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-size:16px;font-weight:600;">Mise en Place</div>
+      <div onclick="document.getElementById('mise-overlay').style.display='none'" style="color:#999;font-size:14px;cursor:pointer;padding:10px 0;">Schliessen</div>
+    </div>
+  </div>
+  <div id="mise-body" style="overflow-y:auto;flex:1;padding:16px 20px 80px;"></div>
+</div>
 <div id="ac-dropdown"></div>
 <!-- LOGIN OVERLAY -->
 <div id="login-overlay" style="display:none;position:fixed;inset:0;background:#fff;z-index:200;align-items:center;justify-content:center;">
