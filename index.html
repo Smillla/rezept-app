@@ -2864,29 +2864,22 @@ function toggleBestellDone(i){i=parseInt(i);
 function exportToReminders(){
   var items=buildBestellung().filter(function(x){return !x.done;});
   if(!items.length){alert('Keine offenen Bestellpositionen.');return;}
-  // Build one line per item: [Lieferant] Menge Einheit Produkt
-  var lines=items.map(function(x){
-    var lief=x.lieferant&&x.lieferant!=='—'?x.lieferant:'Kein Lieferant';
+  // Group by supplier → JSON for Shortcut sections
+  var grouped={};
+  items.forEach(function(x){
+    var lief=x.lieferant&&x.lieferant!=='—'?x.lieferant:'Sonstige';
     var amt=x.menge>0?(Math.round(x.menge*10)/10)+(x.einheit&&x.einheit!=='n.B.'?' '+x.einheit:''):'';
-    return '['+lief+'] '+(amt?amt+' ':'')+x.name;
+    var title=(amt?amt+' ':'')+x.name;
+    if(!grouped[lief])grouped[lief]=[];
+    grouped[lief].push(title);
   });
-  var text=lines.join('\n');
-  var encoded=encodeURIComponent(text);
-  // Max URL length safety: if too long, warn and truncate
-  if(encoded.length>5000){
-    alert('Liste sehr lang ('+items.length+' Positionen). Nur erste '+Math.floor(items.length*5000/encoded.length)+' werden exportiert. Tipp: Filter nach Lieferant und exportiere einzeln.');
-    // Truncate to safe length
-    var truncLines=[];
-    var running='';
-    for(var i=0;i<lines.length;i++){
-      var next=running+(running?'%0A':'')+encodeURIComponent(lines[i]);
-      if(next.length>4800)break;
-      running=next;truncLines.push(lines[i]);
-    }
-    encoded=encodeURIComponent(truncLines.join('\n'));
+  var json=JSON.stringify(grouped);
+  var encoded=encodeURIComponent(json);
+  if(encoded.length>6000){
+    alert('Liste zu lang. Bitte nach Lieferant filtern und einzeln exportieren.');
+    return;
   }
-  var url='shortcuts://run-shortcut?name=Order%20Export&input='+encoded;
-  window.location.href=url;
+  window.location.href='shortcuts://run-shortcut?name=Order%20Export&input='+encoded;
 }
 
 function filterBestellung(lieferant){
