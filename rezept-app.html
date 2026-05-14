@@ -1881,6 +1881,7 @@ function show(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+id).classList.add('active');
   if(id!=='detail')document.getElementById('scale-bar').style.display='none';
+  window.scrollTo(0,0);
 }
 function showList(){showTab('list');}
 
