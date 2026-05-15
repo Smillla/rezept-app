@@ -1817,6 +1817,7 @@ let recipes=[{"id": "r_kb_025", "title": "Armer Ritter", "tags": ["Kochbuch", "F
 {"id": "r_bl_023", "title": "Praline — Weisse Schokolade mit Erdbeeren, Minze und altem Balsamico", "tags": ["blooms", "2026", "Petit Four"], "components": [{"id": "c1", "title": "", "ovenTemp": "", "ovenMode": "", "ovenDur": "", "ovenInfo": "", "groups": [{"id": "g1", "ings": [], "ins": ""}]}], "mise": "", "notes": "", "ts": Date.now()}
 ];
 
+var _mainBlooms=recipes.filter(function(r){return r.id&&/^r_bl_/.test(r.id);});
 // Load saved recipes from localStorage (persists edits/deletes/additions)
 (function(){var saved=localStorage.getItem("rzp_recipes");if(saved){try{var parsed=JSON.parse(saved);if(Array.isArray(parsed)&&parsed.length>0){recipes=parsed;}}catch(e){}}})(  );
 // Normalize "Blooms" tag → "blooms" in loaded recipes
@@ -1828,7 +1829,7 @@ let recipes=[{"id": "r_kb_025", "title": "Armer Ritter", "tags": ["Kochbuch", "F
 {"id": "r_bl_020", "title": "Radieschen mit Mandelricotta und Meerrettich", "tags": ["blooms", "2026", "Wechsel"], "components": [{"id": "c1", "title": "", "ovenTemp": "", "ovenMode": "", "ovenDur": "", "ovenInfo": "", "groups": [{"id": "g1", "ings": [], "ins": ""}]}], "mise": "", "notes": "", "ts": Date.now()},
 {"id": "r_bl_021", "title": "Kürbis mit Kokosnuss, Kurkuma und Macadamianüsse", "tags": ["blooms", "2026", "Wechsel"], "components": [{"id": "c1", "title": "", "ovenTemp": "", "ovenMode": "", "ovenDur": "", "ovenInfo": "", "groups": [{"id": "g1", "ings": [], "ins": ""}]}], "mise": "", "notes": "", "ts": Date.now()},
 {"id": "r_bl_022", "title": "Aprikose mit Sauerampfer, Vanille-Labneh und grünem Pfeffer", "tags": ["blooms", "2026", "Wechsel"], "components": [{"id": "c1", "title": "", "ovenTemp": "", "ovenMode": "", "ovenDur": "", "ovenInfo": "", "groups": [{"id": "g1", "ings": [], "ins": ""}]}], "mise": "", "notes": "", "ts": Date.now()},
-{"id": "r_bl_023", "title": "Praline — Weisse Schokolade mit Erdbeeren, Minze und altem Balsamico", "tags": ["blooms", "2026", "Petit Four"], "components": [{"id": "c1", "title": "", "ovenTemp": "", "ovenMode": "", "ovenDur": "", "ovenInfo": "", "groups": [{"id": "g1", "ings": [], "ins": ""}]}], "mise": "", "notes": "", "ts": Date.now()}];window._hardcodedBlooms=hardcoded;var added=false;hardcoded.forEach(function(r){if(!ids.has(r.id)){recipes.push(r);added=true;}});if(added)try{localStorage.setItem('rzp_recipes',JSON.stringify(recipes));}catch(e){}})();
+{"id": "r_bl_023", "title": "Praline — Weisse Schokolade mit Erdbeeren, Minze und altem Balsamico", "tags": ["blooms", "2026", "Petit Four"], "components": [{"id": "c1", "title": "", "ovenTemp": "", "ovenMode": "", "ovenDur": "", "ovenInfo": "", "groups": [{"id": "g1", "ings": [], "ins": ""}]}], "mise": "", "notes": "", "ts": Date.now()}];window._hardcodedBlooms=typeof _mainBlooms!=='undefined'?_mainBlooms:hardcoded;var added=false;hardcoded.forEach(function(r){if(!ids.has(r.id)){recipes.push(r);added=true;}});if(added)try{localStorage.setItem('rzp_recipes',JSON.stringify(recipes));}catch(e){}})();
 // Migrate: auto-link existing ingredients to Stamm by name (runs once after both are loaded)
 function migrateIngStammIds(){
   if(!zutatenStamm||!zutatenStamm.length)return;
@@ -3356,9 +3357,17 @@ async function syncFromSupabase(){
     if(data.produktion&&data.produktion.length)produktionsplan=data.produktion;
     // Normalize "Blooms" → "blooms" in cloud data
     recipes.forEach(function(r){if(Array.isArray(r.tags))r.tags=r.tags.map(function(t){return t==='Blooms'?'blooms':t;});});
-    // Merge any hardcoded entries not yet in cloud data
+    // Merge hardcoded Blooms: add missing + update empty cloud entries with local content
     var _ids=new Set(recipes.map(function(r){return r.id;}));var _added=false;
-    (window._hardcodedBlooms||[]).forEach(function(r){if(!_ids.has(r.id)){recipes.push(r);_added=true;}});
+    (window._hardcodedBlooms||[]).forEach(function(r){
+      var hasContent=r.components&&r.components.some(function(c){return c.groups&&c.groups.some(function(g){return g.ings&&g.ings.length>0;});});
+      if(!_ids.has(r.id)){recipes.push(r);_added=true;}
+      else if(hasContent){
+        var ci=recipes.findIndex(function(x){return x.id===r.id;});
+        var cloudEmpty=!recipes[ci].components||!recipes[ci].components.some(function(c){return c.groups&&c.groups.some(function(g){return g.ings&&g.ings.length>0;});});
+        if(cloudEmpty){recipes[ci]=r;_added=true;}
+      }
+    });
     try{localStorage.setItem('rzp_recipes',JSON.stringify(recipes));}catch(e){}
     if(_added)await syncToSupabase();
     saveStammData();saveProdData();renderAbtPills();renderList();
